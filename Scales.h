@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <cassert>
 
 // http://www.phys.unsw.edu.au/jw/notes.html
 
@@ -27,14 +28,20 @@ struct Scale {
 	std::vector<int> notes;
 	
 	int note_for_length(float length){
+		assert(notes.size() > 1);
+
 		// determine note
 		length /= 200.0;
 		float note = -std::log(length) / std::log(2.0f) * 12.0f + 69.0f;
 		
 		// determine note in scale
 		auto it = notes.begin();
-		while(*it < note && it != notes.end()){
+		while(*it < note){
 			++it;
+			if(it == notes.end()) {
+				--it;
+				break;
+			}
 		}
 		
 		// determine closest note in scale
