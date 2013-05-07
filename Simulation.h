@@ -94,6 +94,7 @@ struct Simulation {
 	std::vector<collision_type> collisions_in_update;
 	
 	Bounds bounds;
+	math::Vec2 gravity{0.0f, 50.0f};
 	
 	float collision_timer{0.0};
 	int total_collisions{0};
@@ -111,10 +112,13 @@ struct Simulation {
 		
 		// move balls
 		for(auto& b : balls){		
-			b.speed += dt * math::Vec2{0.0f, 50.0f};
+			b.speed += dt * gravity;
 			
-			float rest_time = collide(b, lines, dt);
-			b.position += rest_time*b.speed;
+			auto rest_time = collide(b, lines, dt);
+			while(rest_time.second >= 0.0f && rest_time.first){
+				rest_time = collide(b, lines, rest_time.second, rest_time.first);
+			}
+			b.position += rest_time.second*b.speed;
 		}
 		
 		// count collisions per second (per half second)
@@ -166,7 +170,7 @@ struct Simulation {
 		}
 	}
 	
-	float collide(ball_type& b, std::vector<line_type> const & lines, float dt, line_type const * ignore = nullptr){
+	std::pair<line_type const *, float> collide(ball_type& b, std::vector<line_type> const & lines, float dt, line_type const * ignore = nullptr){
 		line_type const * closest_line = nullptr;
 		math::Vec2 collision{0.0, 0.0};
 		float closeness = 100.0f;
@@ -186,7 +190,7 @@ struct Simulation {
 		}
 		
 		if(closest_line == nullptr){
-			return dt;
+			return std::make_pair(closest_line, dt);
 		} else {
 			++total_collisions;
 			++collisions;
@@ -201,7 +205,7 @@ struct Simulation {
 				b.speed = 2.0*b1 + b.speed;
 			}
 			
-			return collide(b, lines, dt - closeness, closest_line);
+			return std::make_pair(closest_line, dt - closeness);
 		}
 	}
 };
